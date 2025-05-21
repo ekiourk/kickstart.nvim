@@ -354,6 +354,44 @@ require('lazy').setup({
     'mg979/vim-visual-multi',
     branch = 'master',
   },
+  {
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      { 'rcarriga/nvim-dap-ui', dependencies = { 'nvim-neotest/nvim-nio' } },
+      'williamboman/mason.nvim',
+      'jay-babu/mason-nvim-dap.nvim',
+    },
+    config = function()
+      require('dapui').setup()
+      require('mason-nvim-dap').setup {
+        ensure_installed = { 'debugpy' },
+        automatic_installation = true,
+      }
+
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+
+      dap.listeners.after.event_initialized['dapui_config'] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated['dapui_config'] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited['dapui_config'] = function()
+        dapui.close()
+      end
+
+      -- Example keymaps
+      vim.keymap.set('n', '<F5>', dap.continue)
+      vim.keymap.set('n', '<F10>', dap.step_over)
+      vim.keymap.set('n', '<F11>', dap.step_into)
+      vim.keymap.set('n', '<F12>', dap.step_out)
+      vim.keymap.set('n', '<Leader>b', dap.toggle_breakpoint)
+      vim.keymap.set('n', '<Leader>B', function()
+        dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+      end)
+    end,
+  },
 
   -- NOTE: Plugins can specify dependencies.
   --
@@ -726,6 +764,9 @@ require('lazy').setup({
         'goimports', -- Recommended Go formatter (includes gofmt)
         'gomodifytags', -- Utility for managing struct tags
         'impl', -- Utility for implementing interfaces
+        'black',
+        'ruff',
+        'debugpy',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -780,7 +821,7 @@ require('lazy').setup({
         lua = { 'stylua' },
         go = { 'goimports' }, -- Use goimports for Go files
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'black' },
+        python = { 'isort', 'black', 'ruff' },
 
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
