@@ -18,7 +18,7 @@ require('user.options')
 require('user.keymaps')
 -- Load plugins BEFORE the theme, so the theme plugin is available
 require('user.plugins')
-require('user.theme') -- Now this can apply the theme loaded by plugins.lua
+require('user.theme').apply_first_available() -- Now this can apply the theme loaded by plugins.lua
 require('user.lsp')
 require('user.autocommands')
 
