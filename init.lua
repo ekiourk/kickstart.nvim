@@ -1,4 +1,3 @@
-
 -- Bootstrap lazy.nvim plugin manager
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
@@ -19,7 +18,7 @@ require('user.options')
 require('user.keymaps')
 -- Load plugins BEFORE the theme, so the theme plugin is available
 require('user.plugins')
-require('user.theme')     -- Now this can apply the theme loaded by plugins.lua
+require('user.theme') -- Now this can apply the theme loaded by plugins.lua
 require('user.lsp')
 require('user.autocommands')
 
@@ -28,4 +27,3 @@ require('user.autocommands')
 -- or
 -- require('user.languages.python')
 -- require('user.languages.lua')
-

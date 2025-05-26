@@ -30,7 +30,23 @@ require('lazy').setup({
       require('which-key').setup()
     end,
   },
-
+  {
+    'wfxr/minimap.vim',
+    build = "cargo install --locked code-minimap",
+    cmd = { "Minimap", "MinimapClose", "MinimapToggle", "MinimapRefresh", "MinimapUpdateHighlight" },
+    keys = {
+      { "<leader>mm", "<cmd>MinimapToggle<cr>", desc = "Toggle Minimap" },
+    },
+    event = "VeryLazy", -- Load after startup instead of cmd
+    config = function()
+      vim.g.minimap_width = 10
+      vim.g.minimap_auto_start = 1
+      vim.g.minimap_auto_start_win_enter = 1
+      -- Optional: set highlight colors
+      vim.g.minimap_highlight_range = 1
+      vim.g.minimap_highlight_search = 1
+    end,
+  },
   -- Adds git related signs to the gutter, as well as utilities for ggmanaging changes
   {
     'lewis6991/gitsigns.nvim',
@@ -143,13 +159,15 @@ require('lazy').setup({
         callback = function()
           vim.opt_local.foldmethod = "expr"
           vim.opt_local.foldexpr = "nvim_treesitter#foldexpr()"
+          vim.opt_local.foldlevel = 99 -- keep folds mostly open
         end,
       })
     end,
   },
 
   -- Colorscheme
-  { 'folke/tokyonight.nvim', lazy = false, priority = 1000, opts = {} }, -- Loaded early
+  { 'folke/tokyonight.nvim', lazy = false, priority = 1000, opts = {} },
+  { 'rebelot/kanagawa.nvim', lazy = false, priority = 1000 },
 
   -- LSP Zero (for LSP, Mason, cmp)
   {
