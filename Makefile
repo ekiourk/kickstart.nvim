@@ -1,5 +1,10 @@
 # Where things are
-SCRIPTS_DIR = $(HOME)/.config/nvim/scripts
+MAKEFILE_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+
+PYTHON_VENV = $(HOME)/.venvs/nvim
+PYTHON_HOST_FILE = $(MAKEFILE_DIR)/lua/user/languages/python_host.lua
+
+SCRIPTS_DIR = $(MAKEFILE_DIR)/scripts
 LOCAL_BIN = $(HOME)/.local/bin
 BACKUP_DIR = $(HOME)/nvim-backups
 BACKUP_FILE = $(BACKUP_DIR)/nvim-config-$(shell date +%Y%m%d).tar.gz
@@ -50,4 +55,14 @@ clean:
 	rm -f $(LOCAL_BIN)/nvim.appimage
 	@echo "🧹 Cleaned AppImage."
 
+python-env:
+	@echo "📦 Creating Neovim Python environment..."
+	@python3 -m venv $(PYTHON_VENV)
+	@$(PYTHON_VENV)/bin/pip install --upgrade pip > /dev/null
+	@$(PYTHON_VENV)/bin/pip install pynvim > /dev/null
+	@mkdir -p $$(dirname $(PYTHON_HOST_FILE))
+	@echo "vim.g.python3_host_prog = '$(PYTHON_VENV)/bin/python'" > $(PYTHON_HOST_FILE)
+	@echo "✅ Python virtual environment for Neovim set up and configured:"
+	@echo "   - Virtual env: $(PYTHON_VENV)"
+	@echo "   - Config written to: $(PYTHON_HOST_FILE)"
 

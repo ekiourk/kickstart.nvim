@@ -18,12 +18,12 @@ require('user.options')
 require('user.keymaps')
 -- Load plugins BEFORE the theme, so the theme plugin is available
 require('user.plugins')
-require('user.theme').apply_first_available() -- Now this can apply the theme loaded by plugins.lua
-require('user.lsp')
+
+-- Now this can apply the theme loaded by plugins.lua
+require('user.theme').apply_first_available()
+
 require('user.autocommands')
 
--- If you add language-specific files later, you can load them here:
--- require('user.languages.init') -- if you create a languages/init.lua
--- or
--- require('user.languages.python')
--- require('user.languages.lua')
+require('user.languages.init')
+require('kickstart.plugins.debug')
+require('user.system.check_node')

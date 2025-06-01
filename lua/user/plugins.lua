@@ -8,7 +8,6 @@ require('lazy').setup({
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
 
-  -- NOTE: This plugin is disabled in your original file, keeping it that way.
   -- {
   --   'max397574/better-escape.nvim',
   --   event = 'InsertEnter',
@@ -173,7 +172,7 @@ require('lazy').setup({
   {
     'VonHeikemen/lsp-zero.nvim',
     branch = 'v3.x',
-    lazy = true, -- Will be loaded by lsp.lua
+    lazy = false,
     dependencies = {
       -- LSP Support
       { 'neovim/nvim-lspconfig' },
@@ -193,9 +192,8 @@ require('lazy').setup({
       { 'saadparwaiz1/cmp_luasnip' },                           -- Snipet completion source for nvim-cmp
     },
     config = function()
-      -- This is deferred to lsp.lua, which will require('lsp-zero')
-      -- and then call its setup functions.
-      -- This ensures plugins are loaded before LSP setup is attempted.
+      -- ONLY load the config file - no actual configuration here
+      require('user.lsp')
     end,
   },
 
@@ -307,6 +305,8 @@ require('lazy').setup({
     event = 'VimEnter', -- Or 'VeryLazy'
     -- No specific config needed unless you want to customize lspkind itself
   },
+
+  require 'user.languages.plugins'
 
   -- Add your other plugins here, following the same structure
   -- For example, if you had a formatter plugin like null-ls or conform:

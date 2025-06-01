@@ -4,3 +4,6 @@ test.sh
 nvim
 
 spell/
+
+python_host.lua
+
