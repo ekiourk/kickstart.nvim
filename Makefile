@@ -60,6 +60,7 @@ python-env:
 	@python3 -m venv $(PYTHON_VENV)
 	@$(PYTHON_VENV)/bin/pip install --upgrade pip > /dev/null
 	@$(PYTHON_VENV)/bin/pip install pynvim > /dev/null
+	@$(PYTHON_VENV)/bin/pip install debugpy > /dev/null
 	@mkdir -p $$(dirname $(PYTHON_HOST_FILE))
 	@echo "vim.g.python3_host_prog = '$(PYTHON_VENV)/bin/python'" > $(PYTHON_HOST_FILE)
 	@echo "✅ Python virtual environment for Neovim set up and configured:"

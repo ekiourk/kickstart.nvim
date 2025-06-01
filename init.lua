@@ -25,5 +25,4 @@ require('user.theme').apply_first_available()
 require('user.autocommands')
 
 require('user.languages.init')
-require('kickstart.plugins.debug')
 require('user.system.check_node')

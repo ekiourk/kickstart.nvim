@@ -306,7 +306,8 @@ require('lazy').setup({
     -- No specific config needed unless you want to customize lspkind itself
   },
 
-  require 'user.languages.plugins'
+  require 'user.languages.plugins',
+  require 'kickstart.plugins.debug',
 
   -- Add your other plugins here, following the same structure
   -- For example, if you had a formatter plugin like null-ls or conform:
