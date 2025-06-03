@@ -29,7 +29,7 @@ vim.opt.rtp:prepend(lazypath)
 safe_require('user.options')
 safe_require('user.keymaps')
 -- Load plugins BEFORE the theme, so the theme plugin is available
-safe_require('user.plugins')
+safe_require('user.plugins.init')
 
 -- Now this can apply the theme loaded by plugins.lua
 safe_require('user.theme').apply_first_available()
@@ -78,3 +78,8 @@ dashboard.section.footer.val = function()
 end
 
 require("alpha").setup(dashboard.config)
+
+-- auto-load the last session only if Neovim was opened without a file
+if vim.fn.argc() == 0 then
+  require('persistence').load()
+end
