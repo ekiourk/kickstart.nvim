@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- Try to load system-specific Python config
 local python_host_path = vim.fn.stdpath("config") .. "/lua/user/languages/python_host.lua"
 
@@ -26,6 +27,3 @@ vim.api.nvim_create_autocmd("User", {
     vim.cmd("LspRestart")
   end,
 })
-
-
-vim.keymap.set("n", "<leader>vi", ":VenvSelect<CR>", { desc = "Select virtualenv" })

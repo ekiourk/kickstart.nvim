@@ -21,6 +21,15 @@ require('lazy').setup({
   --   end,
   -- },
 
+  {
+    'goolord/alpha-nvim',
+    event = 'VimEnter',
+    dependencies = { 'nvim-tree/nvim-web-devicons' }, -- for icons
+    config = function()
+      require('alpha').setup(require('alpha.themes.dashboard').config)
+    end,
+  },
+
   -- Useful plugin to show you pending keybinds.
   {
     'folke/which-key.nvim',
@@ -28,6 +37,10 @@ require('lazy').setup({
     config = function()
       require('which-key').setup()
     end,
+  },
+  {
+    'mg979/vim-visual-multi',
+    branch = 'master'
   },
   {
     'wfxr/minimap.vim',
