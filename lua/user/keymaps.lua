@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 
 -- Remap for dealing with word wrap
@@ -49,28 +50,28 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Custom keymaps from your file
 vim.keymap.set('n', '<C-d>', '<C-d>zz') -- Center screen after half-page jump
 vim.keymap.set('n', '<C-u>', '<C-u>zz') -- Center screen after half-page jump
-vim.keymap.set('n', 'n', 'nzzzv') -- Center screen after search next
-vim.keymap.set('n', 'N', 'Nzzzv') -- Center screen after search previous
+vim.keymap.set('n', 'n', 'nzzzv')       -- Center screen after search next
+vim.keymap.set('n', 'N', 'Nzzzv')       -- Center screen after search previous
 
 -- Greatest remap ever (for pasting without yanking current selection)
 vim.keymap.set('x', '<leader>p', [["_dP]])
 
 -- Next greatest remap ever : asbjornHaland
 vim.keymap.set({ 'n', 'v' }, '<leader>y', [["+y]]) -- Yank to system clipboard
-vim.keymap.set('n', '<leader>Y', [["+Y]]) -- Yank line to system clipboard
+vim.keymap.set('n', '<leader>Y', [["+Y]])          -- Yank line to system clipboard
 
 vim.keymap.set({ 'n', 'v' }, '<leader>d', [["_d]]) -- Delete to black hole register
 
-vim.keymap.set('i', '<C-c>', '<Esc>') -- Escape from insert mode with Ctrl+C (common, but can conflict)
+vim.keymap.set('i', '<C-c>', '<Esc>')              -- Escape from insert mode with Ctrl+C (common, but can conflict)
 
-vim.keymap.set('n', 'Q', '<nop>') -- Disable Q for Ex mode
+vim.keymap.set('n', 'Q', '<nop>')                  -- Disable Q for Ex mode
 
 vim.keymap.set('n', '<leader>fm', vim.lsp.buf.format, { desc = '[F]ormat [M]ason (LSP)' })
 
-vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz') -- Quickfix list navigation
-vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz') -- Quickfix list navigation
-vim.keymap.set('n', '<leader>k', '<cmd>lnext<CR>zz') -- Location list navigation
-vim.keymap.set('n', '<leader>j', '<cmd>lprev<CR>zz') -- Location list navigation
+vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz')                                         -- Quickfix list navigation
+vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz')                                         -- Quickfix list navigation
+vim.keymap.set('n', '<leader>k', '<cmd>lnext<CR>zz')                                     -- Location list navigation
+vim.keymap.set('n', '<leader>j', '<cmd>lprev<CR>zz')                                     -- Location list navigation
 
 vim.keymap.set('n', '<leader>s', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]]) -- Substitute word under cursor
 

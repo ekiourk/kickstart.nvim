@@ -1,24 +1,29 @@
--- lua/user/lsp.lua
+---@diagnostic disable: undefined-global
+-- LSP Configuration with lsp-zero, mason, and nvim-cmp
 
+-- Load lsp-zero safely
 local status_ok, lsp_zero = pcall(require, 'lsp-zero')
 if not status_ok then
   vim.notify("lsp-zero not found, LSP setup will be skipped.", vim.log.levels.WARN)
   return
 end
 
+-- Set log level for LSP (reduce noise)
+vim.lsp.set_log_level("warn")
+
+-- LSP on_attach handler
 lsp_zero.on_attach(function(client, bufnr)
-  -- see :help lsp-zero-keybindings
-  -- to learn the available actions
   lsp_zero.default_keymaps({ buffer = bufnr })
 
-  -- Additional keymaps from your init.lua (if not covered by lsp_zero.default_keymaps)
   local map = function(keys, func, desc)
     vim.keymap.set('n', keys, func, { buffer = bufnr, noremap = true, silent = true, desc = desc })
   end
 
+  -- Enhanced keymaps
   map('gd', vim.lsp.buf.definition, '[G]oto [D]efinition')
-  map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences') -- Using Telescope for references
+  map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
   map('gI', vim.lsp.buf.implementation, '[G]oto [I]mplementation')
+  map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
   map('<leader>D', vim.lsp.buf.type_definition, 'Type [D]efinition')
   map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
   map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
@@ -27,85 +32,194 @@ lsp_zero.on_attach(function(client, bufnr)
   map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
   map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
 
-  -- Format on save if client supports it (or use a dedicated formatter plugin)
-  if client.supports_method 'textDocument/formatting' then
+  -- Additional useful mappings
+  map('<leader>f', function() vim.lsp.buf.format { async = true } end, '[F]ormat Document')
+  map('<leader>wa', vim.lsp.buf.add_workspace_folder, '[W]orkspace [A]dd Folder')
+  map('<leader>wr', vim.lsp.buf.remove_workspace_folder, '[W]orkspace [R]emove Folder')
+  map('<leader>wl', function()
+    print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+  end, '[W]orkspace [L]ist Folders')
+
+  -- Format on save (with better logic)
+  if client.supports_method('textDocument/formatting') then
+    local augroup = vim.api.nvim_create_augroup('LspFormat.' .. bufnr, { clear = true })
     vim.api.nvim_create_autocmd('BufWritePre', {
-      group = vim.api.nvim_create_augroup('LspFormat.' .. bufnr, { clear = true }),
+      group = augroup,
       buffer = bufnr,
-      callback = function() vim.lsp.buf.format { async = false, bufnr = bufnr } end, -- Consider { async = true } for non-blocking
+      callback = function()
+        vim.lsp.buf.format({
+          async = false,
+          bufnr = bufnr,
+          filter = function(format_client)
+            -- Only format with the current client
+            return format_client.id == client.id
+          end
+        })
+      end,
       desc = 'Format file before saving',
+    })
+  end
+
+  -- Highlight symbol under cursor
+  if client.supports_method('textDocument/documentHighlight') then
+    local highlight_augroup = vim.api.nvim_create_augroup('LspDocumentHighlight.' .. bufnr, { clear = true })
+    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+      group = highlight_augroup,
+      buffer = bufnr,
+      callback = vim.lsp.buf.document_highlight,
+    })
+    vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+      group = highlight_augroup,
+      buffer = bufnr,
+      callback = vim.lsp.buf.clear_references,
     })
   end
 end)
 
+-- Enhanced LSP handlers
+vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
+  vim.lsp.handlers.hover, {
+    border = "rounded",
+    width = 60,
+    max_width = 80,
+    max_height = 20,
+  }
+)
+
+vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(
+  vim.lsp.handlers.signature_help, {
+    border = "rounded",
+    width = 60,
+  }
+)
+
 -- Mason setup
-require('mason').setup({})
+require('mason').setup({
+  ui = {
+    border = "rounded",
+    icons = {
+      package_installed = "✓",
+      package_pending = "➜",
+      package_uninstalled = "✗"
+    }
+  }
+})
+
 require('mason-lspconfig').setup({
   ensure_installed = {
-    -- Your list of LSPs:
-    'ts_ls',
-    'eslint',
-    'lua_ls',
-    'marksman', -- For markdown
-    'pyright',
-    'bashls',
-    'jsonls',
-    'yamlls',
-    'rust_analyzer',
-    -- Add any other LSPs you want managed by Mason
+    -- Language servers
+    'lua_ls',        -- Lua
+    'pyright',       -- Python
+    'ts_ls',         -- TypeScript/JavaScript
+    'eslint',        -- ESLint
+    'rust_analyzer', -- Rust
+    'bashls',        -- Bash
+    'jsonls',        -- JSON
+    'yamlls',        -- YAML
+    'marksman',      -- Markdown
+    'html',          -- HTML
+    'cssls',         -- CSS
+    'tailwindcss',   -- Tailwind CSS (if you use it)
   },
   handlers = {
-    lsp_zero.default_setup, -- Use lsp-zero's default handler for most servers
+    -- Default handler
+    function(server_name)
+      require('lsp-zero').default_setup(server_name)
+    end,
 
-    lua_ls = function()
-      -- Configure lua_ls specific settings here
-      local lspconfig = require('lspconfig')
-      -- Use lsp_zero.nvim_lua_ls() to get the base config and merge your settings
-      local lua_ls_opts = lsp_zero.nvim_lua_ls()
-      lspconfig.lua_ls.setup(vim.tbl_deep_extend('force', lua_ls_opts, {
+    -- Lua language server
+    ["lua_ls"] = function()
+      require('lspconfig').lua_ls.setup(require('lsp-zero').nvim_lua_ls())
+    end,
+
+    -- Python language server
+    ["pyright"] = function()
+      require('lspconfig').pyright.setup({
         settings = {
-          Lua = {
-            workspace = {
-              checkThirdParty = false, -- Or true if you want to check third-party libraries
-            },
-            telemetry = { enable = false },
-            -- Add other lua_ls specific settings here if needed
+          python = {
+            analysis = {
+              typeCheckingMode = "basic", -- or "strict"
+              autoSearchPaths = true,
+              useLibraryCodeForTypes = true,
+              diagnosticMode = "workspace",
+            }
+          }
+        }
+      })
+    end,
+
+    -- TypeScript/JavaScript
+    ["ts_ls"] = function()
+      require('lspconfig').ts_ls.setup({
+        settings = {
+          typescript = {
+            inlayHints = {
+              includeInlayParameterNameHints = 'all',
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            }
+          },
+          javascript = {
+            inlayHints = {
+              includeInlayParameterNameHints = 'all',
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            }
+          }
+        }
+      })
+    end,
+
+    -- JSON language server
+    ["jsonls"] = function()
+      require('lspconfig').jsonls.setup({
+        settings = {
+          json = {
+            schemas = require('schemastore').json.schemas(),
+            validate = { enable = true },
           },
         },
-      }))
+      })
     end,
   },
 })
 
--- Configure nvim-cmp
+-- Enhanced nvim-cmp setup
 local cmp = require('cmp')
-local cmp_action = lsp_zero.cmp_action() -- Get cmp actions from lsp-zero
+local cmp_action = lsp_zero.cmp_action()
+local lspkind_ok, lspkind = pcall(require, 'lspkind')
 
 cmp.setup({
-  -- Your nvim-cmp setup from init.lua
   completion = {
-    -- completeopt = 'menu,menuone,noinsert', -- This is often default or handled well by lsp-zero
+    completeopt = 'menu,menuone,noinsert',
   },
   mapping = cmp.mapping.preset.insert({
     ['<C-Space>'] = cmp.mapping.complete(),
     ['<C-e>'] = cmp.mapping.abort(),
-    ['<CR>'] = cmp.mapping.confirm({ select = true }),
-    -- Using cmp_action for Tab/S-Tab navigation with snippets
+    ['<CR>'] = cmp.mapping.confirm({
+      select = true,
+      behavior = cmp.ConfirmBehavior.Replace,
+    }),
     ['<Tab>'] = cmp_action.luasnip_supertab(),
     ['<S-Tab>'] = cmp_action.luasnip_shift_supertab(),
-    -- Using cmp's own functions for next/prev item, or lsp-zero's actions if preferred
-    ['<C-n>'] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
-    ['<C-p>'] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
-    -- Note: Your original config had <Down> and <Up> mapped. These often conflict with snippet navigation.
-    -- Consider if you still need them or if Tab/S-Tab and C-n/C-p are sufficient.
-    -- ['<Down>'] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Select }),
-    -- ['<Up>'] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Select }),
+    ['<C-n>'] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+    ['<C-p>'] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+    ['<C-u>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-d>'] = cmp.mapping.scroll_docs(4),
   }),
   sources = cmp.config.sources({
-    { name = 'nvim_lsp' },
-    { name = 'luasnip' },
-    { name = 'buffer' },
-    { name = 'path' },
+    { name = 'nvim_lsp', priority = 1000 },
+    { name = 'luasnip',  priority = 750 },
+    { name = 'buffer',   priority = 500 },
+    { name = 'path',     priority = 250 },
   }),
   snippet = {
     expand = function(args)
@@ -113,68 +227,114 @@ cmp.setup({
     end,
   },
   window = {
-    completion = cmp.config.window.bordered(),
-    documentation = cmp.config.window.bordered(),
+    completion = cmp.config.window.bordered({
+      border = 'rounded',
+      winhighlight = 'Normal:Normal,FloatBorder:FloatBorder,CursorLine:Visual,Search:None',
+    }),
+    documentation = cmp.config.window.bordered({
+      border = 'rounded',
+      winhighlight = 'Normal:Normal,FloatBorder:FloatBorder,CursorLine:Visual,Search:None',
+    }),
   },
-  formatting = lsp_zero.cmp_format({
-    -- Recommended settings from lsp-zero docs for better UI
-    fields = { 'abbr', 'kind', 'menu' },
+  formatting = {
+    fields = { 'kind', 'abbr', 'menu' },
     format = function(entry, vim_item)
-      local kind = require("lspkind").cmp_format({ mode = "symbol_text", maxwidth = 50 })(entry, vim_item)
-      local strings = vim.split(kind.kind, "%s", { trimempty = true })
-      kind.kind = " " .. (strings[1] or "") .. " "
-      kind.menu = "    (" .. (strings[2] or "") .. ")"
-      return kind
+      if lspkind_ok then
+        local kind = lspkind.cmp_format({
+          mode = "symbol_text",
+          maxwidth = 50,
+          ellipsis_char = '...',
+        })(entry, vim_item)
+
+        local strings = vim.split(kind.kind, "%s", { trimempty = true })
+        kind.kind = " " .. (strings[1] or "") .. " "
+        kind.menu = "    (" .. (strings[2] or "") .. ")"
+        return kind
+      else
+        -- Fallback without lspkind
+        vim_item.menu = ({
+          nvim_lsp = "[LSP]",
+          luasnip = "[Snippet]",
+          buffer = "[Buffer]",
+          path = "[Path]",
+        })[entry.source.name]
+        return vim_item
+      end
     end,
-  }),
+  },
+  experimental = {
+    ghost_text = true,
+  },
 })
 
--- REMOVED: lsp_zero.setup_nvim_cmp() as it's no longer needed.
--- lsp-zero now integrates with nvim-cmp more directly through the settings above.
+-- Command line completion
+cmp.setup.cmdline({ '/', '?' }, {
+  mapping = cmp.mapping.preset.cmdline(),
+  sources = {
+    { name = 'buffer' }
+  }
+})
 
--- Configure diagnostic signs using the new API
+cmp.setup.cmdline(':', {
+  mapping = cmp.mapping.preset.cmdline(),
+  sources = cmp.config.sources(
+    { { name = 'path' } },
+    { { name = 'cmdline' } }
+  )
+})
+
+-- Enhanced diagnostic configuration
 vim.diagnostic.config({
-  virtual_text = true, -- Show diagnostics inline (can be true, false, or a table for more control)
+  virtual_text = {
+    prefix = '●',
+    source = "if_many",
+    spacing = 2,
+  },
   signs = {
-    active = true,     -- This will use the default signs, or you can define them below
-    -- Define custom signs if you prefer over the defaults
-    -- To see Neovim's defaults, you might not need to specify text/texthl here unless overriding.
-    -- Check :help diagnostic-signs after this setup.
-    -- The 'vim.fn.sign_define' method is deprecated.
-    -- Instead, custom signs are often handled by themes or plugins like 'nvim-web-devicons' for kinds.
-    -- If you still want to customize them directly here:
-    -- (Note: lspkind usually provides better icons for 'kind' in completion and can also influence diagnostics)
+    active = true,
     text = {
-      [vim.diagnostic.severity.ERROR] = '', -- Error
-      [vim.diagnostic.severity.WARN] = '', -- Warning
-      [vim.diagnostic.severity.INFO] = '', -- Info
-      [vim.diagnostic.severity.HINT] = '', -- Hint
+      [vim.diagnostic.severity.ERROR] = '',
+      [vim.diagnostic.severity.WARN] = '',
+      [vim.diagnostic.severity.INFO] = '',
+      [vim.diagnostic.severity.HINT] = '󰌵',
     },
-    -- texthl = { -- Optional: define highlight groups if needed
-    --   [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
-    --   [vim.diagnostic.severity.WARN] = 'DiagnosticWarn',
-    --   [vim.diagnostic.severity.INFO] = 'DiagnosticInfo',
-    --   [vim.diagnostic.severity.HINT] = 'DiagnosticHint',
-    -- },
-    -- numhl = { -- Optional: highlight for the number column
-    --   [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
-    -- },
   },
   underline = true,
   update_in_insert = false,
   severity_sort = true,
-  float = {            -- Configure the appearance of the diagnostic float window
-    source = "always", -- Or "if_many"
+  float = {
+    source = "always",
     border = "rounded",
     focusable = false,
     style = "minimal",
+    header = "",
+    prefix = "",
+    suffix = "",
+    format = function(diagnostic)
+      return string.format("%s (%s) [%s]",
+        diagnostic.message,
+        diagnostic.source,
+        diagnostic.code or diagnostic.user_data.lsp.code
+      )
+    end,
   }
 })
 
--- Optional: Set highlight groups for diagnostic signs if not handled by your theme
+-- Diagnostic keymaps
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
+vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+
+-- Custom highlight for diagnostics
 vim.cmd [[
-  highlight DiagnosticError guifg=#FF0000 guibg=NONE gui=NONE
-  highlight DiagnosticWarn guifg=#FFA500 guibg=NONE gui=NONE
-  highlight DiagnosticInfo guifg=#00FFFF guibg=NONE gui=NONE
-  highlight DiagnosticHint guifg=#00FF00 guibg=NONE gui=NONE
+  highlight DiagnosticError guifg=#FF6B6B guibg=NONE gui=NONE
+  highlight DiagnosticWarn guifg=#FFD93D guibg=NONE gui=NONE
+  highlight DiagnosticInfo guifg=#6BCF7F guibg=NONE gui=NONE
+  highlight DiagnosticHint guifg=#4D9DE0 guibg=NONE gui=NONE
+
+  highlight DiagnosticVirtualTextError guifg=#FF6B6B guibg=NONE gui=italic
+  highlight DiagnosticVirtualTextWarn guifg=#FFD93D guibg=NONE gui=italic
+  highlight DiagnosticVirtualTextInfo guifg=#6BCF7F guibg=NONE gui=italic
+  highlight DiagnosticVirtualTextHint guifg=#4D9DE0 guibg=NONE gui=italic
 ]]
