@@ -105,22 +105,31 @@ require('mason').setup({
   }
 })
 
+
+-- Language servers
+local lsp_servers = {
+  'lua_ls',        -- Lua
+  'pyright',       -- Python
+  'ts_ls',         -- TypeScript/JavaScript
+  'eslint',        -- ESLint
+  'rust_analyzer', -- Rust
+  'bashls',        -- Bash
+  'jsonls',        -- JSON
+  'yamlls',        -- YAML
+  'marksman',      -- Markdown
+  'html',          -- HTML
+  'cssls',         -- CSS
+  'tailwindcss',   -- Tailwind CSS (if you use it)
+  'dockerls',      -- Docker
+}
+
+-- Conditionally add 'nil_ls' if nix is available
+if vim.fn.executable("nix") == 1 then
+  table.insert(lsp_servers, 'nil_ls')
+end
+
 require('mason-lspconfig').setup({
-  ensure_installed = {
-    -- Language servers
-    'lua_ls',        -- Lua
-    'pyright',       -- Python
-    'ts_ls',         -- TypeScript/JavaScript
-    'eslint',        -- ESLint
-    'rust_analyzer', -- Rust
-    'bashls',        -- Bash
-    'jsonls',        -- JSON
-    'yamlls',        -- YAML
-    'marksman',      -- Markdown
-    'html',          -- HTML
-    'cssls',         -- CSS
-    'tailwindcss',   -- Tailwind CSS (if you use it)
-  },
+  ensure_installed = lsp_servers,
   handlers = {
     -- Default handler
     function(server_name)
@@ -189,6 +198,41 @@ require('mason-lspconfig').setup({
         },
       })
     end,
+
+    -- Nix LSP
+    ["nil_ls"] = function()
+      require('lspconfig').nil_ls.setup({
+        settings = {
+          ['nil'] = {
+            formatting = {
+              command = { "nixpkgs-fmt" }, -- Ensure it's installed
+            },
+          },
+        },
+      })
+    end,
+
+    -- Docker LSP
+    ["dockerls"] = function()
+      require('lspconfig').dockerls.setup({})
+    end,
+
+    ["yamlls"] = function()
+      require('lspconfig').yamlls.setup({
+        settings = {
+          yaml = {
+            schemas = {
+              ["https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json"] =
+              "docker-compose*.yml",
+            },
+            validate = true,
+            hover = true,
+            completion = true,
+          },
+        },
+      })
+    end,
+
   },
 })
 
