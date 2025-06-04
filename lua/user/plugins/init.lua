@@ -141,6 +141,7 @@ require('lazy').setup({
         'lua',
         'luadoc',
         'markdown',
+        'markdown_inline',
         'python',
         'query',
         'regex',
@@ -320,6 +321,7 @@ require('lazy').setup({
   require 'user.languages.plugins',
   require 'kickstart.plugins.debug',
   require 'user.plugins.persistence',
+  require 'user.plugins.markdown'
 
   -- Add your other plugins here, following the same structure
   -- For example, if you had a formatter plugin like null-ls or conform:
